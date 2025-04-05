@@ -1,0 +1,9 @@
+{
+  "semi": false,
+  "singleQuote": true,
+  "tabWidth": 2,
+  "jsxSingleQuote": true,
+  "plugins": ["prettier-plugin-stylex-key-sort"],
+  "printWidth": 120,
+  "bracketSameLine": true
+}
