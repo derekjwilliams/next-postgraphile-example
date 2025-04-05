@@ -85,7 +85,7 @@ curl -X POST <http://localhost:3000/api/graphql>\
 Also see the example curl request `example_curl.txt`
 
 ```
-curl 'http://localhost:3000/api/graphql' \
+curl  -X POST 'http://localhost:3000/api/graphql' \
   -H 'accept: application/json' \
   -H 'content-type: application/json' \
   --data-raw '{"query":"{\n  query {\n    allEvents(first: 10) {\n      edges {\n        node {\n          title\n          geoLocation         \n        }\n      }\n    }\n  }\n}\n"}'
