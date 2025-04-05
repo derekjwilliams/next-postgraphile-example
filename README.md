@@ -124,7 +124,7 @@ function createMockRequest(
 ): IncomingMessage {...}
 ```
 
-### createMockResponse
+### `createMockResponse`
 
 The `createMockResponse` function creates a mock `ServerResponse` object, along with helper properties (`chunks` and `headersObj`) to collect the response data. This allows PostGraphile to process the response and return it in a format compatible with Next.js.
 
@@ -137,7 +137,7 @@ function createMockResponse(): {
 ```
 
 
-### POST Handler*
+### POST Handler
 
 Handles GraphQL queries and mutations. This handler uses `createMockRequest` to adapt the Next.js request and `createMockReponse` for the response.
 
