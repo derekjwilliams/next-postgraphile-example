@@ -1,0 +1,4 @@
+curl 'http://localhost:3000/api/graphql' \
+  -H 'accept: application/json' \
+  -H 'content-type: application/json' \
+  --data-raw '{"query":"{\n  query {\n    allEvents(first: 10) {\n      edges {\n        node {\n          title\n          geoLocation         \n        }\n      }\n    }\n  }\n}\n"}'
