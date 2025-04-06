@@ -7,12 +7,13 @@ import { postgraphile } from "postgraphile"
 import { grafserv } from "postgraphile/grafserv/node"
 import { PostGraphileAmberPreset } from "postgraphile/presets/amber"
 import { makePgService } from "postgraphile/adaptors/pg"
+import { processHeaders, normalizeRequest, convertHandlerResultToResult, RequestDigest } from "postgraphile/grafserv";
 
 // PostGraphile plugins
 import { PgPostgisWktPlugin } from "postgraphile-postgis-wkt"
 
 // Next.js modules
-import type { NextRequest } from "next/server"
+import { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 
 // PostGraphile configuration
@@ -29,7 +30,7 @@ const preset = {
     graphqlPath: "/api/graphql",
   },
   grafast: {
-    explain: process.env.NODE_ENV === "development",
+    explain: false//process.env.NODE_ENV === "development",
   },
 }
 
@@ -95,28 +96,58 @@ function createMockResponse(): {
   return { mockResponse, chunks, headersObject }
 }
 
+export function getDigest(req: NextRequest): RequestDigest {
+  return {
+    httpVersionMajor: 1, // Default HTTP version
+    httpVersionMinor: 1, // Default HTTP version
+    isSecure: req.nextUrl.protocol === "https:", // Determine if the request is secure
+    method: req.method, // HTTP method
+    path: req.nextUrl.pathname, // Request path
+    headers: processHeaders(Object.fromEntries(req.headers.entries())), // Normalize headers
+    getQueryParams: () => Object.fromEntries(req.nextUrl.searchParams.entries()), // Query parameters
+    async getBody() {
+      const body = await req.text();
+      if (!body) {
+        throw new Error("Failed to retrieve body from NextRequest");
+      }
+      return {
+        type: "json" as const, // Explicitly define the type as the literal "json"
+        json: JSON.parse(body),
+      };
+    },
+    requestContext: {}, // Empty object for request context (can be extended as needed)
+  };
+}
 /**
  * Handle POST requests (GraphQL queries/mutations).
  */
+
 export async function POST(req: NextRequest) {
   try {
-    const bodyText = await req.text()
-    const mockRequest = createMockRequest(req, bodyText)
-    const { mockResponse, chunks, headersObject } = createMockResponse()
+    const digest = getDigest(req);
 
-    await serv.createHandler()(mockRequest, mockResponse)
+    const normalizedDigest = normalizeRequest(digest)
 
-    return new NextResponse(chunks.join(""), {
-      status: mockResponse.statusCode,
-      headers: headersObject,
-    })
+    const handlerResult = await serv.graphqlHandler(normalizedDigest);
+
+    const result = await convertHandlerResultToResult(handlerResult)
+    if (result && result.type === 'buffer') {
+      const {buffer, headers, statusCode} = result
+      return new NextResponse(buffer, {
+        status: statusCode,
+        headers,
+      });
+    }
+    console.error("Response may be null or empty:");
+    return new NextResponse(null, { status: 500 });
   } catch (error) {
-    console.error("Error in POST handler:", error)
-    return new NextResponse("Internal Server Error", { status: 500 })
+    console.error("Error in POST handler:", error);
+    return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
 
 /**
+ * TODO - Handle in a manner similar to POST, no mocks
  * Handle GET requests (GraphiQL interface).
  */
 export async function GET(req: NextRequest) {
