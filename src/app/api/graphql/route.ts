@@ -96,6 +96,9 @@ function createMockResponse(): {
   return { mockResponse, chunks, headersObject }
 }
 
+/**
+ * Create a RequestDigest with all of the values needed
+ */
 export function getDigest(req: NextRequest): RequestDigest {
   return {
     httpVersionMajor: 1, // Default HTTP version
@@ -111,17 +114,17 @@ export function getDigest(req: NextRequest): RequestDigest {
         throw new Error("Failed to retrieve body from NextRequest");
       }
       return {
-        type: "json", // Explicitly define the type as the literal "json"
+        type: "json",
         json: JSON.parse(body),
       };
     },
-    requestContext: {}, // Empty object for request context (can be extended as needed)
+    requestContext: {},
   };
 }
+
 /**
  * Handle POST requests (GraphQL queries/mutations).
  */
-
 export async function POST(req: NextRequest) {
   try {
     const digest = getDigest(req);
