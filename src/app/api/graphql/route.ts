@@ -125,12 +125,10 @@ export function getDigest(req: NextRequest): RequestDigest {
 export async function POST(req: NextRequest) {
   try {
     const digest = getDigest(req);
-
     const normalizedDigest = normalizeRequest(digest)
-
     const handlerResult = await serv.graphqlHandler(normalizedDigest);
-
     const result = await convertHandlerResultToResult(handlerResult)
+
     if (result && result.type === 'buffer') {
       const {buffer, headers, statusCode} = result
       return new NextResponse(buffer, {
