@@ -1,20 +1,20 @@
 // Node.js built-in modules
-import { Readable } from "stream"
-import type { IncomingMessage, ServerResponse } from "node:http"
+import { Readable } from 'stream'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 
 // PostGraphile core and related modules
-import { postgraphile } from "postgraphile"
-import { grafserv } from "postgraphile/grafserv/node"
-import { PostGraphileAmberPreset } from "postgraphile/presets/amber"
-import { makePgService } from "postgraphile/adaptors/pg"
-import { processHeaders, normalizeRequest, convertHandlerResultToResult, RequestDigest } from "postgraphile/grafserv";
+import { postgraphile } from 'postgraphile'
+import { grafserv } from 'postgraphile/grafserv/node'
+import { PostGraphileAmberPreset } from 'postgraphile/presets/amber'
+import { makePgService } from 'postgraphile/adaptors/pg'
+import { processHeaders, normalizeRequest, convertHandlerResultToResult, RequestDigest } from 'postgraphile/grafserv'
 
 // PostGraphile plugins
-import { PgPostgisWktPlugin } from "postgraphile-postgis-wkt"
+import { PgPostgisWktPlugin } from 'postgraphile-postgis-wkt'
 
 // Next.js modules
-import { NextRequest } from "next/server"
-import { NextResponse } from "next/server"
+import { NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 
 // PostGraphile configuration
 const preset = {
@@ -23,14 +23,14 @@ const preset = {
   pgServices: [
     makePgService({
       connectionString: process.env.DATABASE_URL,
-      schemas: ["public"],
+      schemas: ['public'],
     }),
   ],
   grafserv: {
-    graphqlPath: "/api/graphql",
+    graphqlPath: '/api/graphql',
   },
   grafast: {
-    explain: false//process.env.NODE_ENV === "development",
+    explain: false//process.env.NODE_ENV === 'development',
   },
 }
 
@@ -82,10 +82,10 @@ function createMockResponse(): {
       return headersObject
     },
     write(chunk: string | Buffer | Uint8Array) {
-      chunks.push(typeof chunk === "string" ? chunk : chunk.toString())
+      chunks.push(typeof chunk === 'string' ? chunk : chunk.toString())
     },
     end(chunk?: string | Buffer | Uint8Array) {
-      if (chunk) chunks.push(typeof chunk === "string" ? chunk : chunk.toString())
+      if (chunk) chunks.push(typeof chunk === 'string' ? chunk : chunk.toString())
     },
     writeHead(status: number, headers: Record<string, string>) {
       this.statusCode = status
@@ -103,23 +103,23 @@ export function getDigest(req: NextRequest): RequestDigest {
   return {
     httpVersionMajor: 1, // Default HTTP version
     httpVersionMinor: 1, // Default HTTP version
-    isSecure: req.nextUrl.protocol === "https:", // Determine if the request is secure
+    isSecure: req.nextUrl.protocol === 'https:', // Determine if the request is secure
     method: req.method, // HTTP method
     path: req.nextUrl.pathname, // Request path
     headers: processHeaders(Object.fromEntries(req.headers.entries())), // Normalize headers
     getQueryParams: () => Object.fromEntries(req.nextUrl.searchParams.entries()), // Query parameters
     async getBody() {
-      const body = await req.text();
+      const body = await req.text()
       if (!body) {
-        throw new Error("Failed to retrieve body from NextRequest");
+        throw new Error('Failed to retrieve body from NextRequest')
       }
       return {
-        type: "json",
+        type: 'json',
         json: JSON.parse(body),
-      };
+      }
     },
     requestContext: {},
-  };
+  }
 }
 
 /**
@@ -127,9 +127,9 @@ export function getDigest(req: NextRequest): RequestDigest {
  */
 export async function POST(req: NextRequest) {
   try {
-    const digest = getDigest(req);
+    const digest = getDigest(req)
     const normalizedDigest = normalizeRequest(digest)
-    const handlerResult = await serv.graphqlHandler(normalizedDigest);
+    const handlerResult = await serv.graphqlHandler(normalizedDigest)
     const result = await convertHandlerResultToResult(handlerResult)
 
     if (result && result.type === 'buffer') {
@@ -137,13 +137,13 @@ export async function POST(req: NextRequest) {
       return new NextResponse(buffer, {
         status: statusCode,
         headers,
-      });
+      })
     }
-    console.error("Response may be null or empty:");
-    return new NextResponse(null, { status: 500 });
+    console.error('Response may be null or empty')
+    return new NextResponse('Response may be null or empty:', { status: 500 })
   } catch (error) {
-    console.error("Error in POST handler:", error);
-    return new NextResponse("Internal Server Error", { status: 500 });
+    console.error('Error in POST handler:', error)
+    return new NextResponse('Internal Server Error', { status: 500 })
   }
 }
 
@@ -159,12 +159,12 @@ export async function GET(req: NextRequest) {
   // await is required, DO NOT REMOVE await
   await serv.createHandler()(mockRequest, mockResponse)
 
-  return new NextResponse(chunks.join(""), {
+  return new NextResponse(chunks.join(''), {
     status: mockResponse.statusCode,
     headers: headersObject,
   })}
   catch (error) {
-    console.error("Error in POST handler:", error)
-    return new NextResponse("Internal Server Error", { status: 500 })
+    console.error('Error in POST handler:', error)
+    return new NextResponse('Internal Server Error', { status: 500 })
   }
 }
