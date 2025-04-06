@@ -111,7 +111,7 @@ export function getDigest(req: NextRequest): RequestDigest {
         throw new Error("Failed to retrieve body from NextRequest");
       }
       return {
-        type: "json" as const, // Explicitly define the type as the literal "json"
+        type: "json", // Explicitly define the type as the literal "json"
         json: JSON.parse(body),
       };
     },
