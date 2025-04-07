@@ -3,7 +3,7 @@ import { postgraphile } from 'postgraphile'
 import { grafserv } from 'postgraphile/grafserv/node'
 import { PostGraphileAmberPreset } from 'postgraphile/presets/amber'
 import { makePgService } from 'postgraphile/adaptors/pg'
-import { convertHandlerResultToResult } from 'postgraphile/grafserv'
+import { convertHandlerResultToResult, HandlerResult } from 'postgraphile/grafserv'
 
 // PostGraphile plugins
 import { PgPostgisWktPlugin } from 'postgraphile-postgis-wkt'
@@ -70,10 +70,8 @@ export async function GET(req: NextRequest) {
     const normalizedDigest = getNormalizedDigest(req)
     const handlerResult = await serv.graphiqlHandler(normalizedDigest)
     const result = await convertHandlerResultToResult(handlerResult)
-
     if (result && result.type === 'buffer') {
       const { buffer, headers, statusCode } = result
-
       return new NextResponse(buffer, {
         status: statusCode,
         headers,

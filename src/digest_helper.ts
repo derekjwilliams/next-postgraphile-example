@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server'
 import { normalizeRequest } from 'postgraphile/grafserv'
 
 /**
- * Create a RequestDigest with all of the values needed
+ * Create a NormalizedRequestDigest with all of the values needed
  */
 export function getNormalizedDigest(req: NextRequest): NormalizedRequestDigest {
   const digest: RequestDigest =  {
