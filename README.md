@@ -2,33 +2,7 @@
 
 This project demonstrates how to integrate [PostGraphile version 5](https://postgraphile.org/postgraphile/next/) with a Next.js 15 application using the `app` router and API routes. It includes support for both GraphQL queries/mutations and the Ruru (GraphiQL) interface.
 
-
-## Features
-
--   GraphQL API: Handle GraphQL queries and mutations via `POST` requests to `/api/graphql`.
--   Ruru Interface: Access the Ruru (GraphiQL) interface via `GET` requests to `/api/graphql`.
--   Reusable Mock Request/Response: Custom helper functions to adapt Next.js requests and responses to Node.js's `IncomingMessage` and `ServerResponse` types.
--   PostGraphile Configuration: Customizable PostGraphile setup with support for presets, and plugins.  Includes example of external plugin [PgPostgisWktPlugin](https://www.npmjs.com/package/postgraphile-postgis-wkt), 
-
-
-## Why Workarounds Were Necessary
-
-### Using the Deprecated `createHandler` Method
-
-PostGraphile's `createHandler` method is deprecated in favor of `addTo`, which is designed to work with Node.js HTTP servers or frameworks like Express. 
-
-However, Next.js abstracts away the underlying HTTP server, making it incompatible with `addTo`. As a result, I had to use `createHandler` to manually adapt Next.js requests (`NextRequest`) and responses (`NextResponse`) to Node.js's `IncomingMessage` and `ServerResponse` types.
-
-#### Why Not Use addTo?
-
-The `addTo` method in PostGraphile is designed for use with Node.js HTTP servers or frameworks like Express. However, Next.js abstracts away the underlying HTTP server, making it incompatible with addTo. As a result, I used the deprecated createHandler method to manually adapt Next.js requests and responses to Node.js types.
-
-### Adapting Next.js Requests and Responses
-
-Next.js uses its own request and response objects (`NextRequest` and `NextResponse`), which are not directly compatible with Node.js's `IncomingMessage` and `ServerResponse`. To work around this, I created helper functions (`createMockRequest` and `createMockResponse`) to mimic the expected Node.js types. These mock objects allow PostGraphile to process GraphQL requests and render the Ruru interface.
-
-
-## Setup
+## Getting Started
 
 ### Prerequisites
 
@@ -36,35 +10,52 @@ Next.js uses its own request and response objects (`NextRequest` and `NextResp
 -   A PostgreSQL database (with PostGIS extension if you need to get WKT data from geograpy or geometry columns)
 -   Environment variable `DATABASE_URL` set to your PostgreSQL connection string.
 
-### Installation
+### Configuration
 
-1.  Clone the repository: 
+Set up your `.env` file, for example
 
-```bash 
-git clone git@github.com:derekjwilliams/next-postgraphile-example.git
-```
-
-```bash 
- cd next-postgraphile-example
-```
-
-2.  Install dependencies: 
-
-```bash
-npm install
-```
-
-3.  Set up your `.env` file: 
 ```
 DATABASE_URL=postgres://username:password@localhost:5432/mydatabase
 ```
 
-4.  Start the development server: 
+replacing `username`, `password`, and `mydatabase` with your values; and change the port from `5432` to your value.
+
+### Installing
 
 ```bash
-npm dev
+npm install
+# or
+yarn install
 ```
 
+### Running
+
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+```
+*Note: Errors are encountered when using pnpm, so use npm or yarn for now*
+
+Navigate to `http://localhost:3000/api/graphql` to see the Ruru web interface to run queries and mutations.
+
+
+## Features
+
+-   GraphQL API: Handle GraphQL queries and mutations via `POST` requests to `/api/graphql`.
+-   Ruru Interface: Access the Ruru (GraphiQL like) interface via `GET` requests to `/api/graphql`.
+-   PostGraphile Configuration: Customizable PostGraphile setup with support for presets, and plugins.  Includes example of external plugin [PgPostgisWktPlugin](https://www.npmjs.com/package/postgraphile-postgis-wkt), 
+
+
+### Thanks
+
+I followed a pattern similar to the hono example found [here](https://github.com/graphile/crystal/blob/main/grafast/grafserv/src/servers/hono/v4/index.ts), thanks to Benjie for the great help with the implementation, any shortcomings are mine :).
+
+### Adapting Next.js Requests and Responses
+
+Next.js uses its own request and response objects (`NextRequest` and `NextResponse`), which are not directly compatible with Node.js's `IncomingMessage` and `ServerResponse`. To handle this we have the `getNormalizedDigest` method which does the conversion.
 
 ## API Endpoints
 
@@ -91,19 +82,19 @@ curl  -X POST 'http://localhost:3000/api/graphql' \
   --data-raw '{"query":"{\n  query {\n    allEvents(first: 10) {\n      edges {\n        node {\n          title\n          geoLocation         \n        }\n      }\n    }\n  }\n}\n"}'
 ```
 
+For an events table with `title` and `geoLocation` columns.
+
 #### GET - Ruru (GraphiQL) Interface
 
 Open your browser and navigate to `http://localhost:3000/api/graphql` to access the Ruru (GraphiQL) interface.
 
-The Ruru interface allows you to explore your GraphQL schema, run queries, and test mutations interactively.
-
+The Ruru interface allows you to explore your GraphQL schema, run queries and mutations interactively.
 
 ## Code Overview
 
 ### Helper Functions
 
-   - `createMockRequest`: Converts Next.js requests (`NextRequest`) into Node.js requests (`IncomingMessage`).
-   - `createMockResponse`: Creates a mock response object (`ServerResponse`) for PostGraphile.
+-   `getNormalizedDigest`: Constructs a `NormalizedRequestDigest` object from a Next.js `NextRequest`. This function normalizes headers, extracts query parameters, and handles the request body in the format expected by PostGraphile.
 
 ### Handlers
 
@@ -115,64 +106,92 @@ The Ruru interface allows you to explore your GraphQL schema, run queries, and t
 
 ### `createMockRequest`
 
-The `createMockRequest` function adapts a Next.js `NextRequest` object to a Node.js `IncomingMessage` object, which is required by PostGraphile. This function handles the conversion of headers and body to the format expected by Node.js.
+### `getNormailzedDigest`
+
+The `getNormaizedDigest` function adapts a Next.js `NextRequest` object into a `NormalizedRequestDigest` object, which is required by PostGraphile. This function handles the conversion of headers, query parameters, and body into the format expected by PostGraphile.
 
 ```typescript
-function createMockRequest(
-  req: NextRequest,
-  body?: string
-): IncomingMessage {...}
+export function getNormalizedDigest(req: NextRequest): NormalizedRequestDigest {
+  const digest: RequestDigest =  {
+    httpVersionMajor: 1, // Default HTTP version
+    httpVersionMinor: 1, // Default HTTP version
+    isSecure: req.nextUrl.protocol === 'https:', // Determine if the request is secure
+    method: req.method, // HTTP method
+    path: req.nextUrl.pathname, // Request path
+    headers: processHeaders(Object.fromEntries(req.headers.entries())), // Normalize headers
+    getQueryParams: () => Object.fromEntries(req.nextUrl.searchParams.entries()), // Query parameters
+    async getBody() {
+      const body = await req.text()
+      return {
+        type: 'json',
+        json: body ? JSON.parse(body) : {}, // Empty object if the body is empty
+      }
+    },
+    requestContext: {},
+  }
+  return normalizeRequest(digest)
 ```
-
-### `createMockResponse`
-
-The `createMockResponse` function creates a mock `ServerResponse` object, along with helper properties (`chunks` and `headersObj`) to collect the response data. This allows PostGraphile to process the response and return it in a format compatible with Next.js.
-
-```typescript
-function createMockResponse(): {
-  mockResponse: ServerResponse
-  chunks: string[]
-  headersObject: Record<string, string>
-} {...}
-```
-
 
 ### POST Handler
 
-Handles GraphQL queries and mutations. This handler uses `createMockRequest` to adapt the Next.js request and `createMockReponse` for the response.
+Handles GraphQL queries and mutations. This handler uses `getNormalizedDigest` to adapt the Next.js request into a `NormalizedRequestDigest` object and processes the request using PostGraphile's `graphqlHandler`.
 
 ```typescript
 export async function POST(req: NextRequest) {
-  ...
-  const mockRequest = createMockRequest(req, bodyText)
-  const { mockResponse, chunks, headersObject } = createMockResponse()
-  ...
+  try {
+    const normalizedDigest = getNormalizedDigest(req)
+    const handlerResult = await serv.graphqlHandler(normalizedDigest)
+    const result = await convertHandlerResultToResult(handlerResult)
+
+    if (result && result.type === 'buffer') {
+      const {buffer, headers, statusCode} = result
+      return new NextResponse(buffer, {
+        status: statusCode,
+        headers,
+      })
+    }
+    console.error('Response may be null or empty')
+    return new NextResponse('Response may be null or empty:', { status: 500 })
+  } catch (error) {
+    console.error('Error in POST handler:', error)
+    return new NextResponse('Internal Server Error', { status: 500 })
+  }
 }
 ```
-
 
 ### GET Handler
 
-Handles requests for the Ruru (GraphiQL like) interface. This handler uses `createMockRequest` to adapt the Next.js request and `createMockRespose` for the response.
+Handles requests for the Ruru (GraphiQL-like) interface. This handler uses `getNormalizedDigest` to adapt the Next.js request into a `NormalizedRequestDigest` object and processes the request using PostGraphile's `graphiqlHandler`.
 
-*Of note: Postgraphile V5 does support querying using GET, see the example here: https://github.com/graphile/crystal/blob/main/grafast/grafserv/examples/graphile.config.mjs but that is not being used in this example*
+*Of note: PostGraphile v5 does support querying using GET, see the example here: <https://github.com/graphile/crystal/blob/main/grafast/grafserv/examples/graphile.config.mjs>, but that is not being used in this example.*
 
 ```typescript
 export async function GET(req: NextRequest) {
-  ...
-  const mockRequest = createMockRequest(req)
-  const { mockResponse, chunks, headersObject } = createMockResponse()
-  ...
+  try {
+    const normalizedDigest = getNormalizedDigest(req)
+    const handlerResult = await serv.graphiqlHandler(normalizedDigest)
+    const result = await convertHandlerResultToResult(handlerResult)
+
+    if (result && result.type === 'buffer') {
+      const { buffer, headers, statusCode } = result
+
+      return new NextResponse(buffer, {
+        status: statusCode,
+        headers,
+      })
+    }
+  } catch (error) {
+    console.error("Error in GET handler:", error)
+    return new NextResponse("Internal Server Error", { status: 500 })
+  }
 }
 ```
-
 
 ### PostGraphile Configuration
 
 The PostGraphile instance is configured with the Amber preset and connects to the PostgreSQL database specified in the DATABASE_URL environment variable. This configuration enables the Ruru (GraphiQL like) web interface and sets up the database schema.
 
 ```typescript
-// PostGraphile configuration
 const preset = {
   extends: [PostGraphileAmberPreset],
   plugins: [PgPostgisWktPlugin],
@@ -191,45 +210,8 @@ const preset = {
 }
 ```
 
-
+----
 
 # Next Boiler Plate:
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
-
-
-
-## Getting Started
-
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
