@@ -111,18 +111,18 @@ The `getNormalizedDigest` function adapts a Next.js `NextRequest` object int
 ```typescript
 export function getNormalizedDigest(req: NextRequest): NormalizedRequestDigest {
   const digest: RequestDigest =  {
-    httpVersionMajor: 1, // Default HTTP version
-    httpVersionMinor: 1, // Default HTTP version
-    isSecure: req.nextUrl.protocol === 'https:', // Determine if the request is secure
-    method: req.method, // HTTP method
-    path: req.nextUrl.pathname, // Request path
-    headers: processHeaders(Object.fromEntries(req.headers.entries())), // Normalize headers
-    getQueryParams: () => Object.fromEntries(req.nextUrl.searchParams.entries()), // Query parameters
+    httpVersionMajor: 1,
+    httpVersionMinor: 1,
+    isSecure: req.nextUrl.protocol === 'https:',
+    method: req.method,
+    path: req.nextUrl.pathname,
+    headers: processHeaders(Object.fromEntries(req.headers.entries())),
+    getQueryParams: () => Object.fromEntries(req.nextUrl.searchParams.entries()),
     async getBody() {
       const body = await req.text()
       return {
         type: 'json',
-        json: body ? JSON.parse(body) : {}, // Empty object if the body is empty
+        json: body ? JSON.parse(body) : {},
       }
     },
     requestContext: {},
