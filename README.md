@@ -106,9 +106,9 @@ The Ruru interface allows you to explore your GraphQL schema, run queries and mu
 
 ### `createMockRequest`
 
-### `getNormailzedDigest`
+### `getNormalizedDigest`
 
-The `getNormaizedDigest` function adapts a Next.js `NextRequest` object into a `NormalizedRequestDigest` object, which is required by PostGraphile. This function handles the conversion of headers, query parameters, and body into the format expected by PostGraphile.
+The `getNormalizedDigest` function adapts a Next.js `NextRequest` object into a `NormalizedRequestDigest` object, which is required by PostGraphile. This function handles the conversion of headers, query parameters, and body into the format expected by PostGraphile.
 
 ```typescript
 export function getNormalizedDigest(req: NextRequest): NormalizedRequestDigest {
