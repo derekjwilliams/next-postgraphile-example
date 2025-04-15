@@ -3,7 +3,7 @@ import { postgraphile } from 'postgraphile'
 import { grafserv } from 'postgraphile/grafserv/node'
 import { PostGraphileAmberPreset } from 'postgraphile/presets/amber'
 import { makePgService } from 'postgraphile/adaptors/pg'
-import { convertHandlerResultToResult, HandlerResult } from 'postgraphile/grafserv'
+import { convertHandlerResultToResult } from 'postgraphile/grafserv'
 
 // PostGraphile plugins
 import { PgPostgisWktPlugin } from 'postgraphile-postgis-wkt'
